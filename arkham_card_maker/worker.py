@@ -6,11 +6,23 @@ from .engine import CardRenderer
 from .render_options import RenderOptions
 
 
+_PROCESS_RENDERER: CardRenderer | None = None
+_PROCESS_RENDERER_ASSETS_PATH: str | None = None
+
+
+def _get_process_renderer(assets_path: str | None = None) -> CardRenderer:
+    global _PROCESS_RENDERER, _PROCESS_RENDERER_ASSETS_PATH
+    if _PROCESS_RENDERER is None or _PROCESS_RENDERER_ASSETS_PATH != assets_path:
+        _PROCESS_RENDERER = CardRenderer(assets_path=assets_path)
+        _PROCESS_RENDERER_ASSETS_PATH = assets_path
+    return _PROCESS_RENDERER
+
+
 def render_single_card(args: tuple) -> dict:
     """子进程渲染单张卡牌并保存到文件。"""
     card_path, output_stem, options_dict, assets_path = args
     options = RenderOptions(**options_dict)
-    renderer = CardRenderer(assets_path=assets_path)
+    renderer = _get_process_renderer(assets_path)
     result = renderer.render(card_path, options)
     saved_files = result.save_all(output_stem)
     return {"card": str(card_path), "saved_files": saved_files}

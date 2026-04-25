@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,24 @@ class CardRenderer:
     def __init__(self, assets_path: str | None = None, config: dict | None = None):
         self.assets_path = assets_path
         self.config = config or {}
+        self._workspace_cache: dict[tuple[str, str, str], RenderWorkspace] = {}
+
+    def _workspace_cache_key(self, workspace_path: str | None, assets_path: str | None) -> tuple[str, str, str]:
+        workspace_key = str(Path(workspace_path or os.getcwd()).resolve())
+        assets_key = str(Path(assets_path).resolve()) if assets_path else ""
+        config_key = json.dumps(self.config, sort_keys=True, default=str, ensure_ascii=False)
+        return workspace_key, assets_key, config_key
+
+    def _get_workspace(self, workspace_path: str | None, assets_path: str | None) -> RenderWorkspace:
+        key = self._workspace_cache_key(workspace_path, assets_path)
+        workspace = self._workspace_cache.get(key)
+        if workspace is None:
+            workspace = RenderWorkspace(workspace_path=workspace_path, assets_path=assets_path, config=self.config)
+            self._workspace_cache[key] = workspace
+        return workspace
+
+    def clear_workspace_cache(self) -> None:
+        self._workspace_cache.clear()
 
     def _load_card_source(self, card_source: str | Path | dict[str, Any]) -> tuple[dict[str, Any], Path | None]:
         if isinstance(card_source, dict):
@@ -48,7 +67,8 @@ class CardRenderer:
         options.validate()
         card_json, source_path = self._load_card_source(card_source)
         workspace_path = options.working_dir or (str(source_path.parent) if source_path else None)
-        workspace = RenderWorkspace(workspace_path=workspace_path, assets_path=options.assets_path or self.assets_path, config=self.config)
+        assets_path = options.assets_path or self.assets_path
+        workspace = self._get_workspace(workspace_path, assets_path)
         front, front_metadata = self._render_one(workspace, card_json, options)
         back = None
         back_metadata = None

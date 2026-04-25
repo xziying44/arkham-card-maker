@@ -15,3 +15,23 @@ def test_renderer_does_not_call_legacy_double_render(monkeypatch):
     renderer.render({"type": "事件卡", "class": "中立", "name": "测试", "body": "测试正文", "traits": []}, RenderOptions(bleed=0))
 
     assert calls == [{"layout_only": True, "silence": False}]
+
+
+def test_renderer_reuses_workspace_for_same_context(monkeypatch):
+    created = 0
+    original_init = RenderWorkspace.__init__
+
+    def spy_init(self, *args, **kwargs):
+        nonlocal created
+        created += 1
+        original_init(self, *args, **kwargs)
+
+    monkeypatch.setattr(RenderWorkspace, "__init__", spy_init)
+    renderer = CardRenderer()
+    options = RenderOptions(bleed=0, working_dir=".")
+    card = {"type": "事件卡", "class": "中立", "name": "测试", "body": "测试正文", "traits": []}
+
+    renderer.render(card, options)
+    renderer.render(card, options)
+
+    assert created == 1
