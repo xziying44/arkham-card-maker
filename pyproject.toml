@@ -1,0 +1,22 @@
+[project]
+name = "arkham-card-maker"
+version = "0.1.0"
+description = "阿卡姆恐怖 LCG 自定义卡牌渲染引擎和 CLI"
+requires-python = ">=3.11"
+dependencies = [
+  "Pillow>=10",
+  "numpy>=1.24",
+  "click>=8.1",
+  "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5"]
+fast = ["opencv-python>=4.8"]
+
+[project.scripts]
+arkham-card-maker = "arkham_card_maker.cli.main:cli"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
